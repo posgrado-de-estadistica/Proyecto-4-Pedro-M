@@ -21,6 +21,5 @@ Para ello se dispone de los siguientes apartados:
 
 El documento final resumen de forma técnica el proyecto y se adjunta una presentación relacionada al informe final.
 
-En en enlace [1](https://youtu.be/gS4NvYR42QY) se puede encontrar un video con una breve explicación del proyecto.
-https://youtu.be/gS4NvYR42QY
-
+En en enlace [1](https://youtu.be/mZML1TLKbBc) se puede encontrar un video con una breve explicación del proyecto.
+https://youtu.be/mZML1TLKbBc
