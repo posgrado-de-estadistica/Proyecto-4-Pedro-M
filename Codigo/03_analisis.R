@@ -172,15 +172,25 @@ plot(sp_data, axes=FALSE, border="gray", lwd=2)
 plot(queen_nb, coordinates(sp_data), pch = 19, cex = 0.6, add = T, col = "red")
 box(col = "white")
 
-# Estandarizado
-
-torre_S <- nb2listw(list.torre,style = "B")
+#  W is row standardised (sums over all links to n) AND S is the variance-stabilizing 
+queen_S <- nb2listw(list.queen,style = "W")
+torre_S <- nb2listw(list.torre,style = "W")
 
 summary(unlist(torre_S$weights))
 summary(sapply(torre_S$weights, sum))
 
+summary(unlist(queen_S$weights))
+summary(sapply(queen_S$weights, sum))
 
-# Calculamos datos teóricos sin autocorrelacion espacial
+# Calculamos datos teóricos autocorrelacion espacial
+
+
+set.seed(1)
+n_q <- length(queen_S)
+uncorr_x_q <- rnorm(n_q)
+rho <- 0.5
+autocorr_x_q <- invIrW(queen_S, rho) %*% uncorr_x
+
 
 set.seed(1)
 n <- length(list.torre)
@@ -188,20 +198,23 @@ uncorr_x <- rnorm(n)
 rho <- 0.5
 autocorr_x <- invIrW(torre_S, rho) %*% uncorr_x
 
+# Pruebas I Moran
 
 lm.morantest(lm(sp_data$tvim ~ 1, sp_data), listw = torre_S)
 lm.morantest.sad(lm(sp_data$tvim ~ 1, sp_data), listw = torre_S)
 lm.morantest.exact(lm(sp_data$tvim ~ 1, sp_data), listw = torre_S)
+Im_perm <- moran.mc(sp_data$tvim, listw = torre_S, nsim = 999);Im_perm
 
 
-Im_perm <- moran.mc(sp_data$tvim, listw = torre_S, nsim = 999)
-Im_perm
+i_moran <- lm.morantest(lm(sp_data$tvim ~ 1, sp_data), listw = queen_S)
+i_moran_2 <- lm.morantest.sad(lm(sp_data$tvim ~ 1, sp_data), listw = queen_S)
+i_moran_3 <- lm.morantest.exact(lm(sp_data$tvim ~ 1, sp_data), listw = queen_S)
+i_moran_4 <- moran.mc(sp_data$tvim, listw = queen_S, nsim = 999)
 
 
 # Gráfico de dispersón de los datos observados y rezagados.
 
-oopar <- par(mfrow=c(1,2), oma = c(0, 0, 2, 0))
-msp <- moran.plot(sp_data$tvim, listw=torre_S, quiet=TRUE, xlab = "Intoxicaciones", 
+msp <- moran.plot(sp_data$tvim, listw=torre_S, quiet=TRUE, xlab = "Nacimientos", 
                   ylab = "Tendencia rezagada")
 
 
@@ -220,40 +233,56 @@ lhlh <- interaction(lhx, lhwx, infl, drop=TRUE)
 cols <- rep(1, length(lhlh))
 
 
-# Hacemos el gráfico con los cantones de influencia
+# Gráfico con los cantones de influencia
 
 lm_1 <- localmoran(sp_data$tvim, listw = torre_S)
-lm_2 <- as.data.frame(localmoran.sad(lm(tvim ~ 1,sp_data), nb = list.torre, style = "B"))
-lm_3 <- as.data.frame(localmoran.exact(lm(tvim ~ 1,sp_data), nb = list.torre, style = "B"))
+lm_2 <- as.data.frame(localmoran.sad(lm(tvim ~ 1,sp_data), nb = list.torre, style = "W"))
+# lm_3 <- as.data.frame(localmoran.exact(lm(tvim ~ 1,sp_data), nb = list.torre, style = "W"))
 
 sp_data$Normal <- lm_2[,3]
 sp_data$Aleatorizado <- lm_1[,5]
 
-gry <- c(rev(brewer.pal(6, "Reds")), brewer.pal(6, "Blues"))
 
 # Estimación 
 
-spplot(sp_data, c("Normal", "Aleatorizado"), 
-       at=c(0,0.01,0.05,0.1,0.9,0.95,0.99,1), 
-       col.regions=colorRampPalette(gry)(7))
+E1 <- tm_shape(sp_data) + 
+    tm_polygons("Normal", palette= "RdYlBu", n = 8, title = "TBN") +
+    tm_layout(frame= FALSE) 
 
-tm_shape(sp_data) + 
-    tm_polygons("t_0_1", palette= "RdYlBu", n = 8, title = "TBN") +
-    tm_layout(main.title = "Tasa Bruta de Natalidad por Cantón \n Costa Rica 2000", main.title.position = "center", main.title.size = 0.7,frame= FALSE) 
+E2 <- tm_shape(sp_data) + 
+    tm_polygons("Aleatorizado", palette= "RdYlBu", n = 8, title = "TBN") +
+    tm_layout(frame= FALSE) 
+
+pdf("Imagenes/estimacion_1.pdf")
+tmap_arrange(E1,E2)
+dev.off()
 
 
 # Modelos Autorregresivos
 
 El problema de ignorar la estructura espacial de los datos implica que las estimaciones de OLS en el modelo no espacial pueden ser sesgadas, inconsistentes o ineficientes, dependiendo de cuál sea la verdadera dependencia subyacente (para más información, ver Anselin y Bera (1998) )
 
-chi.ols<-lm(tvim~NAME_1, data=sp_data@data)
+library(stats)
+
+chi.ols<-lm(tvim~1, data=sp_data@data)
 summary(chi.ols)
 
-moran.lm<-lm.morantest(chi.ols, W, alternative="two.sided")
-print(moran.lm)
+extractAIC(chi.ols)
+
+
+# moran.lm<-lm.morantest(chi.ols, W, alternative="two.sided")
+# print(moran.lm)
+
 
 # Modelos SAR
 Una forma es asumir la normalidad del término de error y utilizar la máxima probabilidad.
 
-sar.chi<-lagsarlm(violent~1, data=sp_data$data, W)
+sar.chi<-lagsarlm(tvim~1, data=sp_data, W)
 summary(sar.chi)
+
+sp_data@data$chi.ols.res<-resid(chi.ols) #residuals ols
+sp_data@data$chi.sar.res<-resid(sar.chi) #residual sar
+
+spplot(sp_data,"chi.ols.res", at=seq(min(sp_data@data$chi.ols.res,na.rm=TRUE),max(sp_data@data$chi.ols.res,na.rm=TRUE),length=12),col.regions=rev(brewer.pal(11,"RdBu")))
+
+spplot(sp_data,"chi.sar.res", at=seq(min(sp_data@data$chi.sar.res,na.rm=TRUE),max(sp_data@data$chi.sar.res,na.rm=TRUE),length=12),col.regions=rev(brewer.pal(11,"RdBu")))
