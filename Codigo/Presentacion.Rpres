@@ -1,0 +1,48 @@
+Presentacion Proyecto 4
+========================================================
+author: Pedro Montenegro
+date: 16-12-2019
+autosize: true
+
+Tasa de nacimientos a nivel cantonal, Costa Rica 2000 a 2011
+========================================================
+
+```{r echo=FALSE, message=FALSE, warning=FALSE}
+library(rgdal)
+library(RColorBrewer)
+library(spdep)
+library(sp)
+library(ggplot2)
+library(tmap)
+library(rgeos)
+library(raster)
+library(deldir)
+library(spdep)
+library(dplyr)
+library(RDS)
+
+nac_final <- readRDS("Datos/nac_final.Rds") %>% mutate(Canton= ifelse(Canton== "Montes De Oro", "Montes de Oro", Canton)) 
+shape <- readRDS("Datos/Cantones/CRI_adm22.rds")
+shape <- crop(shape, extent(-88, -82, 7, 12))
+
+sp_data  <- merge(shape, nac_final, by.x="NAME_2", by.y="Canton")
+
+rm(nac_final)
+rm(shape)
+```
+
+Temas:
+
+- Introducción
+- Métodos
+- Desarrollo 
+- Conclusiones
+
+
+Gráficos
+========================================================
+
+
+Gráficos 2
+========================================================
+

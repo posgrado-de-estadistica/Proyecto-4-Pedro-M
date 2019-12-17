@@ -19,4 +19,8 @@ Para ello se dispone de los siguientes apartados:
 3) Una Carpeta que contiene las imagenes 
 4) Carpeta con la documentación relacionada con el proyecto.
 
+El documento final resumen de forma técnica el proyecto y se adjunta una presentación relacionada al informe final.
+
+En en enlace [1](https://youtu.be/gS4NvYR42QY) se puede encontrar un video con una breve explicación del proyecto.
+https://youtu.be/gS4NvYR42QY
 
